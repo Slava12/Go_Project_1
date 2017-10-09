@@ -1,0 +1,12 @@
+language: "English"
+time:
+  hour: 18
+  minute: 12
+  second: 36
+repository:
+  directory: "/home/svyatoslav/goProjects/Go_Project_0"
+  file: "testProgram.go"
+system:
+  name: "Linux Mint"
+  release: "18.2"
+  codename: "Sonya"
