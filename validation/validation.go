@@ -2,7 +2,7 @@ package validation
 
 import (
 	//"regexp"
-	"github.com/Slava12/Go_Project_0/config"
+	"github.com/Slava12/Go_Project_1/config"
 	"log"
 )
 

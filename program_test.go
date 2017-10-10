@@ -4,8 +4,8 @@ import(
 	//"log"
 	//"fmt"
 	"testing"
-	"github.com/Slava12/Go_Project_0/config"
-	"github.com/Slava12/Go_Project_0/validation"
+	"github.com/Slava12/Go_Project_1/config"
+	"github.com/Slava12/Go_Project_1/validation"
 )
 
 /*func TestLoadConfig(t *testing.T){
