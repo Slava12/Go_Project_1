@@ -4,7 +4,7 @@ time:
   minute: 12
   second: 36
 repository:
-  directory: "/home/svyatoslav/goProjects/Go_Project_0"
+  directory: "-path /home/svyatoslav/goProjects/src/github.com/Slava12/Go_Project_1/configuration.yaml"
   file: "testProgram.go"
 system:
   name: "Linux Mint"
