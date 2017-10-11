@@ -33,21 +33,24 @@ type Config struct {
     System MySystem 	`yaml:"system"`
 }
 
-func LoadConfig(configurationPath string) Config {
+func LoadConfig(configurationPath string) (Config, error) {
 	
+	config := Config{}
+
     bytesFile, errorReadFile := ioutil.ReadFile(configurationPath)
     if errorReadFile != nil {
-        log.Fatal("Файл конфигурации не был загружен!")
+        log.Println("Файл конфигурации не был загружен!")
+        return config, errorReadFile
     }
     
-	config := Config{}
 	errorUnmarshal := yaml.Unmarshal(bytesFile, &config)
 	if errorUnmarshal != nil {
-    	log.Fatalf("error: %v", errorUnmarshal)
+    	log.Println("Ошибка распаковки файла!")
+    	return config, errorUnmarshal
     }
     log.Println("Загружен файл конфигурации:")
     fmt.Printf("%+v\n", config)
-    return config
+    return config, nil
 }
 
 func ConfigValidation (config Config) bool {
@@ -86,7 +89,10 @@ func main() {
     configurationPath := flag.String("path", "", "Путь до файла конфигурации.")
     flag.Parse()
 
-    config := LoadConfig(*configurationPath)
+    config, errorLoadConfig := LoadConfig(*configurationPath)
+    if errorLoadConfig != nil {
+    	log.Fatalf("error: %v", errorLoadConfig)
+    }
 
     if ConfigValidation(config) == false {
     	log.Fatal("Валидация закончилась неудачей!")

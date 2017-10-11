@@ -29,3 +29,17 @@ func TestConfigValidation(t *testing.T){
 		t.Error("Valid Error")
 	}
 }
+
+func TestLoadConfig(t *testing.T) {
+	configurationPath := "/home/svyatoslav/goProjects/src/github.com/Slava12/Go_Project_1/configuration.yaml"
+	config1 := Config{}
+	config, _ := LoadConfig(configurationPath)
+	if config == config1 {
+		t.Error("Valid Error")
+	}
+	configurationPath = "/home/svyatoslav/goProjects/src/github.com/Slava12/Go_Project_1/configuration.yam"
+	config, _ = LoadConfig(configurationPath)
+	if config != config1 {
+		t.Error("Valid Error")
+	}
+}
