@@ -1,11 +1,11 @@
 package main
 
-import(
+import (
 	"testing"
 )
 
-func TestConfigValidation(t *testing.T){
-	
+func TestConfigValidation(t *testing.T) {
+
 	config1 := Config{}
 
 	config1.Time.Hour = 18
