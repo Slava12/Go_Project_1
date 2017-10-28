@@ -1,45 +1,41 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	//"os"
-	"log"
 	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
+	"log"
+	//"gopkg.in/mgo.v2/bson"
+	"github.com/Slava12/Go_Project_1/loadobj"
 )
 
-type ModelRecord struct {
-	Vertices string
-	Normals string
-	Textures string
-	Faces string
-	FileName string
-	FileSize string
-	FileModTime string
-}
-
 func main() {
-	session, err := mgo.Dial("localhost")
-    if err != nil {
-        panic(err)
-    }
-    defer session.Close()
+	session, errorDial := mgo.Dial("localhost")
+	if errorDial != nil {
+		log.Fatal("Не удалось установить соединение с базой данных!")
+	}
+	defer session.Close()
 
-        // Optional. Switch the session to a monotonic behavior.
-        session.SetMode(mgo.Monotonic, true)
+	session.SetMode(mgo.Monotonic, true)
 
-        c := session.DB("test").C("records")
+	c := session.DB("test").C("records")
+	modelRecord, errorLoadObjFile := loadobj.LoadObjFileInfo()
+	if errorLoadObjFile != nil {
+		log.Fatal("Не удалось загрузить файл!")
+	}
 
-	    err = c.Insert(&ModelRecord{"12", "13", "14", "15", "lol", "12", "67"})
-        if err != nil {
-                log.Fatal(err)
-        }
+	errorInsert := c.Insert(&modelRecord)
+	if errorInsert != nil {
+		log.Fatal("Невозможно произвести вставку элемента в таблицу - неправильный формат!")
+	}
 
-        result := ModelRecord{}
-        err = c.Find(bson.M{"filename": "lol"}).One(&result)
-        if err != nil {
-                log.Fatal(err)
-        }
+	log.Println("Модель", modelRecord.Name, "была добавлена.")
 
-        fmt.Println("Vertices:", result.Vertices)
+	/*result := loadobj.ModelRecord{}
+	  err = c.Find(bson.M{"filename": "untitled.obj"}).One(&result)
+	  if err != nil {
+	          log.Fatal(err)
+	  }
+
+	  fmt.Println("Vertices:", result.Vertices)*/
 }
