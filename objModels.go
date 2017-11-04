@@ -1,4 +1,4 @@
-package loadobj
+package main
 
 import (
 	//"fmt"
@@ -19,14 +19,11 @@ type ModelRecord struct {
 	FileModTime time.Time
 }
 
-func LoadObjFileInfo() (ModelRecord, error) {
+func LoadObjFileInfo(filename string) (ModelRecord, error) {
 	modelRecord := ModelRecord{}
-	filename := "untitled.obj"
-	if len(os.Args) == 1 {
-		log.Println("Файл с моделью не был загружен!")
+	if filename == "" {
+		log.Println("Нет файла для загрузки!")
 		return modelRecord, nil
-	} else {
-		filename = os.Args[1]
 	}
 	fileObj, errorOpen := os.Open(filename)
 	if errorOpen != nil {

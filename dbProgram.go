@@ -9,33 +9,24 @@ import (
 	"github.com/Slava12/Go_Project_1/loadobj"
 )
 
-func main() {
-	session, errorDial := mgo.Dial("localhost")
-	if errorDial != nil {
-		log.Fatal("Не удалось установить соединение с базой данных!")
-	}
-	defer session.Close()
-
-	session.SetMode(mgo.Monotonic, true)
-
-	c := session.DB("test").C("records")
-	modelRecord, errorLoadObjFile := loadobj.LoadObjFileInfo()
+func InsertIntoDB(filename string, session *mgo.Session) error {
+	modelRecord, errorLoadObjFile := loadobj.LoadObjFileInfo(filename)
 	if errorLoadObjFile != nil {
-		log.Fatal("Не удалось загрузить файл!")
+		log.Println("Не удалось загрузить файл!")
+		return errorLoadObjFile
 	}
 
+	log.Println("Загружены данные о модели:", modelRecord.Name)
+
+	session1 := session.Copy()
+	defer session1.Close()
+	c := session1.DB("test").C("records")
 	errorInsert := c.Insert(&modelRecord)
 	if errorInsert != nil {
-		log.Fatal("Невозможно произвести вставку элемента в таблицу - неправильный формат!")
+		log.Println("Невозможно произвести вставку элемента в таблицу - неправильный формат!")
+		return errorInsert
 	}
 
-	log.Println("Модель", modelRecord.Name, "была добавлена.")
-
-	/*result := loadobj.ModelRecord{}
-	  err = c.Find(bson.M{"filename": "untitled.obj"}).One(&result)
-	  if err != nil {
-	          log.Fatal(err)
-	  }
-
-	  fmt.Println("Vertices:", result.Vertices)*/
+	log.Println("Данные о модели", modelRecord.Name, "были добавлены в базу данных.")
+	return nil
 }
