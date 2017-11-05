@@ -52,3 +52,8 @@ func LoadObjFileInfo(filename string) (ModelRecord, error) {
 	modelRecord.FileModTime = file.ModTime()
 	return modelRecord, nil
 }
+
+/*func main () {
+	modRec, _ := LoadObjFileInfo("/home/svyatoslav/Загрузки/obj/Soft_chair_OBJ.obj")
+	log.Println(modRec.Name)
+}*/
