@@ -26,10 +26,8 @@ func GetAllRecords(session *mgo.Session) []ModelRecord {
 	internalSession := session.Copy()
 	defer internalSession.Close()
 	collection := internalSession.DB("test").C("records")
-	//err := c.Find(bson.M{"filename": "Soft_chair_OBJ.obj"}).One(&result)
 	err := collection.Find(bson.M{}).All(&result)
 	if err != nil {
-		//log.Fatal(err)
 		log.Println("Не удалось осуществить поиск по базе данных!")
 		return nil
 	}
@@ -58,7 +56,7 @@ func InsertIntoDB(filename string, session *mgo.Session) error {
 	return nil
 }
 
-func FindOneResult(field string, value string, session *mgo.Session) string {
+func FindOneResult(field string, value string, session *mgo.Session) ModelRecord {
 	result := ModelRecord{}
 	internalSession := session.Copy()
 	defer internalSession.Close()
@@ -66,10 +64,10 @@ func FindOneResult(field string, value string, session *mgo.Session) string {
 	err := collection.Find(bson.M{field: value}).One(&result)
 	if err != nil {
 		log.Println("Нет совпадений в базе данных!")
-		return ""
+		return result
 	}
 	log.Println("Есть совпадение в базе данных по полю:", field, ", значение:", value)
-	return result.Name
+	return result
 }
 
 func RemoveAllRecords(session *mgo.Session) {
