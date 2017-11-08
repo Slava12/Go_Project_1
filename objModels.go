@@ -1,14 +1,15 @@
 package main
 
 import (
-	//"fmt"
 	"github.com/sheenobu/go-obj/obj"
+	"gopkg.in/mgo.v2/bson"
 	"log"
 	"os"
 	"time"
 )
 
 type ModelRecord struct {
+	Id          bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	Name        string
 	Vertices    int
 	Normals     int

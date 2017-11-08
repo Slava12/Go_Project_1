@@ -1,8 +1,6 @@
 package main
 
 import (
-	//"fmt"
-	//"os"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
@@ -34,7 +32,21 @@ func GetAllRecords(session *mgo.Session) []ModelRecord {
 	return result
 }
 
-func InsertIntoDB(filename string, session *mgo.Session) error {
+func InsertModelRecordIntoDB(modelRecord ModelRecord, session *mgo.Session) error {
+	internalSession := session.Copy()
+	defer internalSession.Close()
+	collection := internalSession.DB("test").C("records")
+	errorInsert := collection.Insert(&modelRecord)
+	if errorInsert != nil {
+		log.Println("Невозможно произвести вставку элемента в таблицу - неправильный формат!")
+		return errorInsert
+	}
+
+	log.Println("Данные о модели", modelRecord.Name, "были добавлены в базу данных.")
+	return nil
+}
+
+func InsertFileIntoDB(filename string, session *mgo.Session) error {
 	modelRecord, errorLoadObjFile := LoadObjFileInfo(filename)
 	if errorLoadObjFile != nil {
 		log.Println("Не удалось загрузить файл!")
@@ -43,16 +55,10 @@ func InsertIntoDB(filename string, session *mgo.Session) error {
 
 	log.Println("Загружены данные о модели:", modelRecord.Name)
 
-	session1 := session.Copy()
-	defer session1.Close()
-	c := session1.DB("test").C("records")
-	errorInsert := c.Insert(&modelRecord)
-	if errorInsert != nil {
-		log.Println("Невозможно произвести вставку элемента в таблицу - неправильный формат!")
-		return errorInsert
+	err := InsertModelRecordIntoDB(modelRecord, session)
+	if err != nil {
+		return err
 	}
-
-	log.Println("Данные о модели", modelRecord.Name, "были добавлены в базу данных.")
 	return nil
 }
 
@@ -91,4 +97,16 @@ func RemoveOneRecord(field string, value string, session *mgo.Session) {
 		return
 	}
 	log.Println("Запись", value, "была удалена из базы данных.")
+}
+
+func UpdateOneRecord(field string, value string, modelRecord ModelRecord, session *mgo.Session) {
+	internalSession := session.Copy()
+	defer internalSession.Close()
+	collection := internalSession.DB("test").C("records")
+	err := collection.Update(bson.M{field: value}, &modelRecord)
+	if err != nil {
+		log.Println("Не удалось обновить запись в базе данных!")
+		return
+	}
+	log.Println("Запись", value, "была обновлена в базе данных.")
 }

@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func SaveFile(filePath string, fileHeader *multipart.FileHeader) {
+func SaveFile(filePath string, fileHeader *multipart.FileHeader, fileName string) {
 	file, err := fileHeader.Open()
 
 	bytesOfFile, err := ioutil.ReadAll(file)
@@ -15,7 +15,13 @@ func SaveFile(filePath string, fileHeader *multipart.FileHeader) {
 		log.Println("Файл", fileHeader.Filename, "не был прочитан!")
 		return
 	}
-	fullFilePath := filePath + fileHeader.Filename
+	fullFilePath := ""
+	if fileName != "" {
+		fullFilePath = filePath + fileName
+	} else {
+		fullFilePath = filePath + fileHeader.Filename
+	}
+
 	fileInServer, err := os.Create(fullFilePath)
 	if err != nil {
 		log.Println("Файл", fileHeader.Filename, "не был создан!")
@@ -54,10 +60,10 @@ func RemoveAllFiles(path string) {
 
 func Exists(path string) bool {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		log.Println("Указанный путь не существует!")
+		log.Println("Указанный путь", path, " не существует!")
 		return false
 	}
-	log.Println("Указанный путь существует.")
+	log.Println("Указанный путь", path, " существует.")
 	return true
 }
 
