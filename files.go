@@ -24,20 +24,20 @@ func SaveFile(filePath string, fileHeader *multipart.FileHeader, fileName string
 
 	fileInServer, err := os.Create(fullFilePath)
 	if err != nil {
-		log.Println("Файл", fileHeader.Filename, "не был создан!")
+		log.Println("Файл", fullFilePath, "не был создан!")
 		return
 	}
-	log.Println("Файл", fileHeader.Filename, "был создан.")
+	log.Println("Файл", fullFilePath, "был создан.")
 
 	_, err = fileInServer.Write(bytesOfFile)
 	if err != nil {
-		log.Println("Запись файла", fileHeader.Filename, "не удалась!")
+		log.Println("Запись файла", fullFilePath, "не удалась!")
 		return
 	}
-	log.Println("Файл", fileHeader.Filename, "был записан.")
+	log.Println("Файл", fullFilePath, "был записан.")
 
 	fileInServer.Close()
-	log.Println("Файл", fileHeader.Filename, "был закрыт.")
+	log.Println("Файл", fullFilePath, "был закрыт.")
 }
 
 func RemoveFile(filePath string) {

@@ -53,29 +53,35 @@ func ClearRecords(w http.ResponseWriter, r *http.Request) {
 }
 
 func RemoveRecords(w http.ResponseWriter, r *http.Request) {
-	removedObjModel := FindOneResult("name", r.FormValue("n"), session)
-	RemoveFile(folder + removedObjModel.FileName)
-	RemoveOneRecord("name", r.FormValue("n"), session)
+	log.Println("Попытка удаления записи:", r.FormValue("fileName"))
+	removedObjModel := FindOneResult("name", r.FormValue("fileName"), session)
+	if removedObjModel.Name != "" {
+		RemoveFile(folder + removedObjModel.FileName)
+		RemoveOneRecord("name", removedObjModel.Name, session)
+		log.Println("Удаление записи окончилось успехом.")
+	} else {
+		log.Println("Удаление записи окончилось неудачей.")
+	}
 	http.Redirect(w, r, "/records", 302)
 }
 
 func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 	// Доп.флаг c означает очистку
 	// Лучше было бы обработать это отдельным методом /records/clear/
-	if r.FormValue("c") != "" {
+	if r.FormValue("clear") != "" {
 		ClearRecords(w, r)
 		return
 	}
 
 	// Доп. флаг n видимо означает фильтр по имени для удаления (почему??)
 	// Кроме того, по REST нужно, чтобы удаление шло методом DELETE
-	if r.FormValue("n") != "" {
+	if r.FormValue("fileName") != "" {
 		RemoveRecords(w, r)
 		return
 	}
 
 	// Остальное - по-видимому добавление
-	_, fileHeader, err := r.FormFile("f")
+	_, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("Ошибка получения файла: %s", err)
 		// В API хорошим тоном считается отдавать корректные коды ошибок
@@ -124,6 +130,7 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 		log.Println("Файл", fileHeader.Filename, "имеет пустое имя модели!")
 		html := `<html><head><title>LOL</title></head><body><div>Empty name!</div><div><a href="/records">Вернуться к списку записей</a></div></body></html>`
 		w.Write([]byte(html))
+		return
 	}
 
 	internalObjModel := FindOneResult("name", objModel.Name, session)
@@ -148,11 +155,8 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 		}
 
 		objModel = FindOneResult("name", objModel.Name, session)
-		log.Println(objModel.Id)
 		idStr := objModel.Id.String()
-		log.Println(idStr)
 		arrStrings := strings.Split(idStr, "\"")
-		log.Println(arrStrings[1])
 		SaveFile(folder, fileHeader, arrStrings[1]+".obj")
 		objModel.Category = category
 		objModel.Subcategory = subcategory
