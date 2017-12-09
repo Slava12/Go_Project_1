@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gorilla/sessions"
 	"html/template"
 	"log"
 	"net/http"
@@ -9,15 +10,92 @@ import (
 	"strings"
 )
 
-var tpl *template.Template
-var tempFolder string
-var folder string
+var (
+	tpl        *template.Template
+	tempFolder string
+	folder     string
+	key        = []byte("super-secret-key")
+	store      = sessions.NewCookieStore(key)
+)
 
 func index(w http.ResponseWriter, r *http.Request) {
-	err := tpl.ExecuteTemplate(w, "index.gohtml", nil)
+	sessionBrowser, _ := store.Get(r, "cookie-name")
+
+	if sessionBrowser.Values["texturesCheck"] == nil {
+		sessionBrowser.Values["texturesCheck"] = 0
+	}
+	if sessionBrowser.Values["normalsCheck"] == nil {
+		sessionBrowser.Values["normalsCheck"] = 0
+	}
+	if r.Method == "GET" {
+		showFilterRecords(w, r, sessionBrowser.Values["texturesCheck"].(int), sessionBrowser.Values["normalsCheck"].(int))
+	}
+
+	if r.Method == "POST" {
+		setFilters(w, r)
+	}
+}
+
+func showHeader(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
+	var one string
+	var two string
+	if texturesCheck != 0 {
+		log.Println("texturesCheck = 1")
+		one = "checked"
+	} else {
+		log.Println("texturesCheck = 0")
+		one = ""
+	}
+	if normalsCheck != 0 {
+		log.Println("normalsCheck = 1")
+		two = "checked"
+	} else {
+		log.Println("normalsCheck = 0")
+		two = ""
+	}
+	userAgent := r.UserAgent()
+	log.Println("user agent:", userAgent)
+	data := struct {
+		One string
+		Two string
+	}{
+		One: one,
+		Two: two,
+	}
+	err := tpl.ExecuteTemplate(w, "header", data)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
+}
+
+func showFilterRecords(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
+	showHeader(w, r, texturesCheck, normalsCheck)
+	result := GetAllRecords(session)
+	var str string
+	for i := 0; i < len(result); i++ {
+		str += result[i].Name + " "
+	}
+	err := tpl.ExecuteTemplate(w, "index", str)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func setFilters(w http.ResponseWriter, r *http.Request) {
+	sessionBrowser, _ := store.Get(r, "cookie-name")
+	if r.FormValue("withTextures") != "" {
+		sessionBrowser.Values["texturesCheck"] = 1
+	} else {
+		sessionBrowser.Values["texturesCheck"] = 0
+	}
+
+	if r.FormValue("withNormals") != "" {
+		sessionBrowser.Values["normalsCheck"] = 1
+	} else {
+		sessionBrowser.Values["normalsCheck"] = 0
+	}
+	sessionBrowser.Save(r, w)
+	http.Redirect(w, r, "/index", 302)
 }
 
 func GetRecords(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +116,7 @@ func GetRecords(w http.ResponseWriter, r *http.Request) {
         	<td>` + result[i].Subcategory + `</td>`
 	}
 
-	err := tpl.ExecuteTemplate(w, "records.gohtml", template.HTML(stringOut))
+	err := tpl.ExecuteTemplate(w, "records.html", template.HTML(stringOut))
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
@@ -183,7 +261,7 @@ func getAllRecords(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	tpl = template.Must(template.ParseGlob("templates/*.gohtml"))
+	tpl = template.Must(template.ParseGlob("templates/*.html"))
 
 	log.Println("Старт сервера.")
 	config, errorLoadConfig := LoadConfigFile()
