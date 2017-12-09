@@ -28,15 +28,12 @@ func index(w http.ResponseWriter, r *http.Request) {
 		sessionBrowser.Values["normalsCheck"] = 0
 	}
 	if r.Method == "GET" {
-		showFilterRecords(w, r, sessionBrowser.Values["texturesCheck"].(int), sessionBrowser.Values["normalsCheck"].(int))
-	}
-
-	if r.Method == "POST" {
-		setFilters(w, r)
+		showTitle(w, r, sessionBrowser.Values["texturesCheck"].(int), sessionBrowser.Values["normalsCheck"].(int))
+		showFilterRecords(w, r)
 	}
 }
 
-func showHeader(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
+func showTitle(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
 	var one string
 	var two string
 	if texturesCheck != 0 {
@@ -68,8 +65,7 @@ func showHeader(w http.ResponseWriter, r *http.Request, texturesCheck int, norma
 	}
 }
 
-func showFilterRecords(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
-	showHeader(w, r, texturesCheck, normalsCheck)
+func showFilterRecords(w http.ResponseWriter, r *http.Request) {
 	result := GetAllRecords(session)
 	var str string
 	for i := 0; i < len(result); i++ {
@@ -95,7 +91,7 @@ func setFilters(w http.ResponseWriter, r *http.Request) {
 		sessionBrowser.Values["normalsCheck"] = 0
 	}
 	sessionBrowser.Save(r, w)
-	http.Redirect(w, r, "/index", 302)
+	http.Redirect(w, r, "/", 302)
 }
 
 func GetRecords(w http.ResponseWriter, r *http.Request) {
@@ -279,6 +275,7 @@ func main() {
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 
 	http.HandleFunc("/", index)
+	http.HandleFunc("/set_filters", setFilters)
 	http.HandleFunc("/records", getAllRecords)
 
 	http.ListenAndServe(":"+port, nil)
