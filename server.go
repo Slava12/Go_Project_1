@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"regexp"
 )
 
 var (
@@ -27,13 +28,74 @@ func index(w http.ResponseWriter, r *http.Request) {
 	if sessionBrowser.Values["normalsCheck"] == nil {
 		sessionBrowser.Values["normalsCheck"] = 0
 	}
+	if sessionBrowser.Values["sortBySize"] == nil {
+		sessionBrowser.Values["sortBySize"] = 0
+	}
+	if sessionBrowser.Values["searchByName"] == nil {
+		sessionBrowser.Values["searchByName"] = ""
+	}
+	searchByName := sessionBrowser.Values["searchByName"].(string)
+	texturesCheck := sessionBrowser.Values["texturesCheck"].(int)
+	normalsCheck := sessionBrowser.Values["normalsCheck"].(int)
+	sortBySize := sessionBrowser.Values["sortBySize"].(int)
+	result := filterRecords(searchByName, texturesCheck, normalsCheck, sortBySize)
 	if r.Method == "GET" {
-		showTitle(w, r, sessionBrowser.Values["texturesCheck"].(int), sessionBrowser.Values["normalsCheck"].(int))
-		showFilterRecords(w, r)
+		showTitle(w, r, searchByName, texturesCheck, normalsCheck, sortBySize)
+		showFilterRecords(w, r, result)
 	}
 }
 
-func showTitle(w http.ResponseWriter, r *http.Request, texturesCheck int, normalsCheck int) {
+func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sortBySize int) []ModelRecord {
+	var modelRecords []ModelRecord
+	if sortBySize == 0 {
+		modelRecords = GetAllRecords(session)
+	} else if sortBySize == 1 {
+		modelRecords = GetSortedRecords("filesize", "", session)
+	} else if sortBySize == -1 {
+		modelRecords = GetSortedRecords("filesize", "-", session)
+	}
+	
+	filteredModelRecords := make([]ModelRecord, len(modelRecords))
+	newLength := 0
+	for i:=0; i < len(modelRecords); i++ {
+		if searchByName != "" {
+			matched, errMatch := regexp.MatchString(`.*(?i:` + searchByName + `).*`, modelRecords[i].Name) // ` + searchByName + `
+			if errMatch != nil {
+				log.Println("error: ", errMatch)
+				return nil
+			}
+			if matched == false {
+				continue
+			}
+		}
+		if texturesCheck != 0 {
+			if modelRecords[i].Textures == 0 {
+				continue
+			}
+		}
+		if normalsCheck != 0 {
+			if modelRecords[i].Normals == 0 {
+				continue
+			}
+		}
+		filteredModelRecords[i] = modelRecords[i]
+		newLength++
+	}
+	filteredModelRecordsShort := make([]ModelRecord, newLength)
+	j := 0
+	for i:=0; i < len(modelRecords); i++ {
+		if filteredModelRecords[i].Name != "" {
+			filteredModelRecordsShort[j] = filteredModelRecords[i]
+			j++
+		}
+	}
+	return filteredModelRecordsShort
+}
+
+func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, texturesCheck int, normalsCheck int, sortBySize int) {
+	if searchByName != "" {
+		log.Println("Поиск по слову:", searchByName)
+	}
 	var one string
 	var two string
 	if texturesCheck != 0 {
@@ -50,14 +112,41 @@ func showTitle(w http.ResponseWriter, r *http.Request, texturesCheck int, normal
 		log.Println("normalsCheck = 0")
 		two = ""
 	}
+	var sortSize1 string
+	var sortSize2 string
+	var sortSize3 string
+	if sortBySize == 0 {
+		log.Println("Порядок по умолчанию.")
+		sortSize1 = "selected"
+		sortSize2 = ""
+		sortSize3 = ""
+	} else if sortBySize == 1 {
+		log.Println("Сортировка по возрастанию размера.")
+		sortSize1 = ""
+		sortSize2 = "selected"
+		sortSize3 = ""
+	} else if sortBySize == -1 {
+		log.Println("Сортировка по убыванию размера.")
+		sortSize1 = ""
+		sortSize2 = ""
+		sortSize3 = "selected"
+	}
 	userAgent := r.UserAgent()
 	log.Println("user agent:", userAgent)
 	data := struct {
+		SearchByName string
 		One string
 		Two string
+		SortSize1 string
+		SortSize2 string
+		SortSize3 string
 	}{
+		SearchByName: searchByName,
 		One: one,
 		Two: two,
+		SortSize1: sortSize1,
+		SortSize2: sortSize2,
+		SortSize3: sortSize3,
 	}
 	err := tpl.ExecuteTemplate(w, "header", data)
 	if err != nil {
@@ -65,11 +154,10 @@ func showTitle(w http.ResponseWriter, r *http.Request, texturesCheck int, normal
 	}
 }
 
-func showFilterRecords(w http.ResponseWriter, r *http.Request) {
-	result := GetAllRecords(session)
+func showFilterRecords(w http.ResponseWriter, r *http.Request, result []ModelRecord) {
 	var str string
 	for i := 0; i < len(result); i++ {
-		str += result[i].Name + " "
+		str += strconv.Itoa(i + 1) + " Name: " + result[i].Name + " Sise: " + strconv.FormatInt(result[i].FileSize, 10) + " "
 	}
 	err := tpl.ExecuteTemplate(w, "index", str)
 	if err != nil {
@@ -79,6 +167,9 @@ func showFilterRecords(w http.ResponseWriter, r *http.Request) {
 
 func setFilters(w http.ResponseWriter, r *http.Request) {
 	sessionBrowser, _ := store.Get(r, "cookie-name")
+
+	sessionBrowser.Values["searchByName"] = r.FormValue("searchByName")
+
 	if r.FormValue("withTextures") != "" {
 		sessionBrowser.Values["texturesCheck"] = 1
 	} else {
@@ -90,6 +181,15 @@ func setFilters(w http.ResponseWriter, r *http.Request) {
 	} else {
 		sessionBrowser.Values["normalsCheck"] = 0
 	}
+
+	if r.FormValue("sortBySize") == "noneSize" {
+		sessionBrowser.Values["sortBySize"] = 0
+	} else if r.FormValue("sortBySize") == "upSize" {
+		sessionBrowser.Values["sortBySize"] = 1
+	} else if r.FormValue("sortBySize") == "downSize" {
+		sessionBrowser.Values["sortBySize"] = -1
+	}
+
 	sessionBrowser.Save(r, w)
 	http.Redirect(w, r, "/", 302)
 }

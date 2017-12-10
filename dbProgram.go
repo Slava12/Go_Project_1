@@ -110,3 +110,17 @@ func UpdateOneRecord(field string, value string, modelRecord ModelRecord, sessio
 	}
 	log.Println("Запись", value, "была обновлена в базе данных.")
 }
+
+func GetSortedRecords(field string, order string, session *mgo.Session) []ModelRecord {
+	result := []ModelRecord{}
+	internalSession := session.Copy()
+	defer internalSession.Close()
+	collection := internalSession.DB("test").C("records")
+	err := collection.Find(nil).Sort(order + field).All(&result)
+	if err != nil {
+		log.Println("Не удалось отсортировать записи по полю", field, "в базе данных!")
+		return nil
+	}
+	log.Println("Записи в базе данных были отсортированы по полю:", field)
+	return result
+}
