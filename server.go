@@ -6,9 +6,9 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
 )
 
 var (
@@ -17,6 +17,7 @@ var (
 	folder     string
 	key        = []byte("super-secret-key")
 	store      = sessions.NewCookieStore(key)
+	path       = "/index"
 )
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -38,14 +39,29 @@ func index(w http.ResponseWriter, r *http.Request) {
 	texturesCheck := sessionBrowser.Values["texturesCheck"].(int)
 	normalsCheck := sessionBrowser.Values["normalsCheck"].(int)
 	sortBySize := sessionBrowser.Values["sortBySize"].(int)
-	result := filterRecords(searchByName, texturesCheck, normalsCheck, sortBySize)
+	category := ""
+	subcategory := ""
+	log.Println("URL:", r.URL.String())
+	if r.URL.String() == "/index" {
+	} else {
+		arrStrings := strings.Split(r.URL.String(), "/")
+		if len(arrStrings) == 2 {
+			category = arrStrings[1]
+		} else {
+			subcategory = arrStrings[2]
+		}
+	}
+	path = r.URL.String()
+	log.Println("category:", category)
+	log.Println("subcategory:", subcategory)
+	result := filterRecords(searchByName, texturesCheck, normalsCheck, sortBySize, category, subcategory)
 	if r.Method == "GET" {
 		showTitle(w, r, searchByName, texturesCheck, normalsCheck, sortBySize)
 		showFilterRecords(w, r, result)
 	}
 }
 
-func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sortBySize int) []ModelRecord {
+func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sortBySize int, category string, subcategory string) []ModelRecord {
 	var modelRecords []ModelRecord
 	if sortBySize == 0 {
 		modelRecords = GetAllRecords(session)
@@ -54,12 +70,12 @@ func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sor
 	} else if sortBySize == -1 {
 		modelRecords = GetSortedRecords("filesize", "-", session)
 	}
-	
+
 	filteredModelRecords := make([]ModelRecord, len(modelRecords))
 	newLength := 0
-	for i:=0; i < len(modelRecords); i++ {
+	for i := 0; i < len(modelRecords); i++ {
 		if searchByName != "" {
-			matched, errMatch := regexp.MatchString(`.*(?i:` + searchByName + `).*`, modelRecords[i].Name) // ` + searchByName + `
+			matched, errMatch := regexp.MatchString(`.*(?i:`+searchByName+`).*`, modelRecords[i].Name) // ` + searchByName + `
 			if errMatch != nil {
 				log.Println("error: ", errMatch)
 				return nil
@@ -78,12 +94,22 @@ func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sor
 				continue
 			}
 		}
+		if category != "" {
+			if category != modelRecords[i].Category {
+				continue
+			}
+		}
+		if subcategory != "" {
+			if subcategory != modelRecords[i].Subcategory {
+				continue
+			}
+		}
 		filteredModelRecords[i] = modelRecords[i]
 		newLength++
 	}
 	filteredModelRecordsShort := make([]ModelRecord, newLength)
 	j := 0
-	for i:=0; i < len(modelRecords); i++ {
+	for i := 0; i < len(modelRecords); i++ {
 		if filteredModelRecords[i].Name != "" {
 			filteredModelRecordsShort[j] = filteredModelRecords[i]
 			j++
@@ -135,18 +161,18 @@ func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, text
 	log.Println("user agent:", userAgent)
 	data := struct {
 		SearchByName string
-		One string
-		Two string
-		SortSize1 string
-		SortSize2 string
-		SortSize3 string
+		One          string
+		Two          string
+		SortSize1    string
+		SortSize2    string
+		SortSize3    string
 	}{
 		SearchByName: searchByName,
-		One: one,
-		Two: two,
-		SortSize1: sortSize1,
-		SortSize2: sortSize2,
-		SortSize3: sortSize3,
+		One:          one,
+		Two:          two,
+		SortSize1:    sortSize1,
+		SortSize2:    sortSize2,
+		SortSize3:    sortSize3,
 	}
 	err := tpl.ExecuteTemplate(w, "header", data)
 	if err != nil {
@@ -157,7 +183,7 @@ func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, text
 func showFilterRecords(w http.ResponseWriter, r *http.Request, result []ModelRecord) {
 	var str string
 	for i := 0; i < len(result); i++ {
-		str += strconv.Itoa(i + 1) + " Name: " + result[i].Name + " Sise: " + strconv.FormatInt(result[i].FileSize, 10) + " "
+		str += strconv.Itoa(i+1) + " Name: " + result[i].Name + " Sise: " + strconv.FormatInt(result[i].FileSize, 10) + " "
 	}
 	err := tpl.ExecuteTemplate(w, "index", str)
 	if err != nil {
@@ -191,9 +217,10 @@ func setFilters(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sessionBrowser.Save(r, w)
-	http.Redirect(w, r, "/", 302)
+	http.Redirect(w, r, path, 302)
 }
 
+//----------------------------------------------------------------------------//
 func GetRecords(w http.ResponseWriter, r *http.Request) {
 	result := GetAllRecords(session)
 
@@ -240,25 +267,20 @@ func RemoveRecords(w http.ResponseWriter, r *http.Request) {
 }
 
 func ChangeRecords(w http.ResponseWriter, r *http.Request) {
-	// Доп.флаг c означает очистку
 	// Лучше было бы обработать это отдельным методом /records/clear/
 	if r.FormValue("clear") != "" {
 		ClearRecords(w, r)
 		return
 	}
 
-	// Доп. флаг n видимо означает фильтр по имени для удаления (почему??)
-	// Кроме того, по REST нужно, чтобы удаление шло методом DELETE
 	if r.FormValue("fileName") != "" {
 		RemoveRecords(w, r)
 		return
 	}
 
-	// Остальное - по-видимому добавление
 	_, fileHeader, err := r.FormFile("file")
 	if err != nil {
 		log.Printf("Ошибка получения файла: %s", err)
-		// В API хорошим тоном считается отдавать корректные коды ошибок
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -279,7 +301,6 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 	}
 
 	extension := filepath.Ext(fileHeader.Filename)
-	// При сравнении строк нельзя забывать про регистр
 	if strings.ToLower(extension) != ".obj" {
 		err := tpl.ExecuteTemplate(w, "wrongFormat.gohtml", nil)
 		if err != nil {
@@ -288,7 +309,6 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Очистку лучше делать через defer, чтобы она отработала в любом случае
 	SaveFile(tempFolder, fileHeader, "")
 	defer RemoveFile(tempFolder + fileHeader.Filename)
 
@@ -343,16 +363,15 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 func getAllRecords(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		GetRecords(w, r)
+		log.Println("loooooooooooooooooool")
 		return
 	}
 
-	// Добавил, хотя этого не было
 	if r.Method == "DELETE" {
 		RemoveRecords(w, r)
 		return
 	}
 
-	// PUT / POST / PATCH
 	ChangeRecords(w, r)
 }
 
@@ -374,8 +393,22 @@ func main() {
 	CreateDirectory(tempFolder)
 	http.Handle("/assets/", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets/"))))
 
-	http.HandleFunc("/", index)
+	http.HandleFunc("/index", index)
 	http.HandleFunc("/set_filters", setFilters)
+	http.HandleFunc("/furniture", index)
+	http.HandleFunc("/furniture/chair", index)
+	http.HandleFunc("/furniture/table", index)
+	http.HandleFunc("/furniture/sofa", index)
+	http.HandleFunc("/car", index)
+	http.HandleFunc("/car/sportcar", index)
+	http.HandleFunc("/car/truck", index)
+	http.HandleFunc("/car/service", index)
+	http.HandleFunc("/weapon", index)
+	http.HandleFunc("/weapon/tank", index)
+	http.HandleFunc("/weapon/helicopter", index)
+	http.HandleFunc("/weapon/plane", index)
+	http.HandleFunc("/other", index)
+
 	http.HandleFunc("/records", getAllRecords)
 
 	http.ListenAndServe(":"+port, nil)
