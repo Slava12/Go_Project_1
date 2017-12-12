@@ -270,6 +270,18 @@ func setFilters(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, path, 302)
 }
 
+func clearFilters(w http.ResponseWriter, r *http.Request) {
+	sessionBrowser, _ := store.Get(r, "cookie-name")
+
+	sessionBrowser.Values["searchByName"] = ""
+	sessionBrowser.Values["texturesCheck"] = 0
+	sessionBrowser.Values["normalsCheck"] = 0
+	sessionBrowser.Values["sortBySize"] = 0
+
+	sessionBrowser.Save(r, w)
+	http.Redirect(w, r, path, 302)
+}
+
 func showModel(w http.ResponseWriter, r *http.Request) {
 	log.Println("URL:", r.URL.String())
 	arrStrings := strings.Split(r.URL.String(), "/")
@@ -333,6 +345,11 @@ func RemoveRecords(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/records", 302)
 }
 
+type ErrorLoad struct {
+	Title string
+	Message string
+}
+
 func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 	// Лучше было бы обработать это отдельным методом /records/clear/
 	if r.FormValue("clear") != "" {
@@ -362,14 +379,18 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 
 	if category == "" && subcategory == "" {
 		log.Println("Категория или подкатегория пусты!")
-		html := `<html><head><title>Empty kategory</title></head><body><div>Empty kategory or subcategory!</div><div><a href="/records">Вернуться к списку записей</a></div></body></html>`
-		w.Write([]byte(html))
+		errorMessage := ErrorLoad {Title: "Пустые поля", Message: "Не выбраны категория или подкатегория!"}
+		err := tpl.ExecuteTemplate(w, "error.html", errorMessage)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
 	extension := filepath.Ext(fileHeader.Filename)
 	if strings.ToLower(extension) != ".obj" {
-		err := tpl.ExecuteTemplate(w, "wrongFormat.gohtml", nil)
+		errorMessage := ErrorLoad {Title: "Неверный формат", Message: "Для загрузки выбран не obj-файл!"}
+		err := tpl.ExecuteTemplate(w, "error.html", errorMessage)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
@@ -389,8 +410,11 @@ func ChangeRecords(w http.ResponseWriter, r *http.Request) {
 	log.Println("Получена информация о модели", objModel.Name)
 	if objModel.Name == "" {
 		log.Println("Файл", fileHeader.Filename, "имеет пустое имя модели!")
-		html := `<html><head><title>LOL</title></head><body><div>Empty name!</div><div><a href="/records">Вернуться к списку записей</a></div></body></html>`
-		w.Write([]byte(html))
+		errorMessage := ErrorLoad {Title: "Пустое имя", Message: "В файле отсутствует имя модели!"}
+		err := tpl.ExecuteTemplate(w, "error.html", errorMessage)
+		if err != nil {
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
 		return
 	}
 
@@ -461,6 +485,7 @@ func main() {
 
 	http.HandleFunc("/index", index)
 	http.HandleFunc("/set_filters", setFilters)
+	http.HandleFunc("/clear_filters", clearFilters)
 	http.HandleFunc("/furniture", index)
 	http.HandleFunc("/furniture/chair", index)
 	http.HandleFunc("/furniture/table", index)
