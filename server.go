@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -18,7 +17,7 @@ var (
 	key        = []byte("super-secret-key")
 	store      = sessions.NewCookieStore(key)
 	path       = "/index"
-	fileName   = "111"
+	fileName   string
 )
 
 func CreatePaths() ([]string, []string) {
@@ -54,7 +53,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 	category := ""
 	subcategory := ""
 	log.Println("URL:", r.URL.String())
-	//log.Println("RequestURI:", r.RequestURI)
 	if r.URL.String() == "/index" {
 	} else {
 		arrStrings := strings.Split(r.URL.String(), "/")
@@ -69,7 +67,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	log.Println("subcategory:", subcategory)
 	result := filterRecords(searchByName, texturesCheck, normalsCheck, sortBySize, category, subcategory)
 	if r.Method == "GET" {
-		showTitle(w, r, searchByName, texturesCheck, normalsCheck, sortBySize, category, subcategory)
+		showTitle(w, r, category, subcategory)
+		showFilters(w, r, searchByName, texturesCheck, normalsCheck, sortBySize)
 		showFilterRecords(w, r, result)
 	}
 }
@@ -131,7 +130,24 @@ func filterRecords(searchByName string, texturesCheck int, normalsCheck int, sor
 	return filteredModelRecordsShort
 }
 
-func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, texturesCheck int, normalsCheck int, sortBySize int, category string, subcategory string) {
+func showTitle(w http.ResponseWriter, r *http.Request, category string, subcategory string) {
+	var title string
+	if category != "" {
+		title = category
+	} else if subcategory != "" {
+		title = subcategory
+	} else {
+		title = "Главная страница"
+	}
+	userAgent := r.UserAgent()
+	log.Println("user agent:", userAgent)
+	err := tpl.ExecuteTemplate(w, "title.html", title)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+	}
+}
+
+func showFilters(w http.ResponseWriter, r *http.Request, searchByName string, texturesCheck int, normalsCheck int, sortBySize int) {
 	if searchByName != "" {
 		log.Println("Поиск по слову:", searchByName)
 	}
@@ -170,14 +186,6 @@ func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, text
 		sortSize2 = ""
 		sortSize3 = "selected"
 	}
-	var title string
-	if category != "" {
-		title = category
-	} else if subcategory != "" {
-		title = subcategory
-	} else {
-		title = "Главная страница"
-	}
 	userAgent := r.UserAgent()
 	log.Println("user agent:", userAgent)
 	data := struct {
@@ -187,7 +195,6 @@ func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, text
 		SortSize1    string
 		SortSize2    string
 		SortSize3    string
-		Title         string
 	}{
 		SearchByName: searchByName,
 		One:          one,
@@ -195,9 +202,8 @@ func showTitle(w http.ResponseWriter, r *http.Request, searchByName string, text
 		SortSize1:    sortSize1,
 		SortSize2:    sortSize2,
 		SortSize3:    sortSize3,
-		Title:        title,
 	}
-	err := tpl.ExecuteTemplate(w, "header.html", data)
+	err := tpl.ExecuteTemplate(w, "filters.html", data)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
@@ -217,8 +223,8 @@ func showFilterRecords(w http.ResponseWriter, r *http.Request, result []ModelRec
 		Link        string
 	}
 	data := make([]SiteData, len(result))
-	for i:= 0; i < len(result); i++ {
-		data[i].Name =  result[i].Name
+	for i := 0; i < len(result); i++ {
+		data[i].Name = result[i].Name
 		data[i].Vertices = result[i].Vertices
 		data[i].Normals = result[i].Normals
 		data[i].Textures = result[i].Textures
@@ -265,24 +271,27 @@ func setFilters(w http.ResponseWriter, r *http.Request) {
 }
 
 func showModel(w http.ResponseWriter, r *http.Request) {
-	log.Println("URL:",r.URL.String())
+	log.Println("URL:", r.URL.String())
 	arrStrings := strings.Split(r.URL.String(), "/")
 	modelName := arrStrings[3]
 	modelRecords := GetAllRecords(session)
 	var result ModelRecord
 	for i := 0; i < len(modelRecords); i++ {
-		matched, errMatch := regexp.MatchString(`.*(?i:` + modelName + `).*`, modelRecords[i].Name)
+		matched, errMatch := regexp.MatchString(`.*(?i:`+modelName+`).*`, modelRecords[i].Name)
 		if errMatch != nil {
 			log.Println("error: ", errMatch)
 		}
 		if matched != false {
-			result = modelRecords[i]
-			continue
+			if modelName == strings.ToLower(modelRecords[i].Name) {
+				result = modelRecords[i]
+				continue
+			}
 		}
 	}
 	log.Println("name =", result.Name)
 	fileName = result.FileName
 	if r.Method == "GET" {
+		showTitle(w, r, result.Name, "")
 		err := tpl.ExecuteTemplate(w, "model.html", result)
 		if err != nil {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
@@ -291,29 +300,13 @@ func showModel(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadFileFromServer(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, folder + fileName)
+	http.ServeFile(w, r, folder+fileName)
 }
 
 //----------------------------------------------------------------------------//
 func GetRecords(w http.ResponseWriter, r *http.Request) {
 	result := GetAllRecords(session)
-
-	var stringOut string
-	// TODO: templates {{range pipeline}} T1 {{end}}
-	// https://golang.org/pkg/text/template/#hdr-Actions
-	for i := 0; i < len(result); i++ {
-		stringOut += `<tr><td>` + result[i].Name + `</td>
-        	<td>` + strconv.Itoa(result[i].Vertices) + `</td>
-        	<td>` + strconv.Itoa(result[i].Normals) + `</td>
-        	<td>` + strconv.Itoa(result[i].Textures) + `</td>
-        	<td>` + strconv.Itoa(result[i].Faces) + `</td>
-        	<td>` + result[i].FileName + `</td>
-        	<td>` + strconv.FormatInt(result[i].FileSize, 10) + `</td>
-        	<td>` + result[i].Category + `</td>
-        	<td>` + result[i].Subcategory + `</td>`
-	}
-
-	err := tpl.ExecuteTemplate(w, "records.html", template.HTML(stringOut))
+	err := tpl.ExecuteTemplate(w, "records.html", result)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 	}
@@ -483,7 +476,7 @@ func main() {
 	http.HandleFunc("/other", index)
 
 	modelPaths, modelFilePaths := CreatePaths()
-	for i:= 0; i < len(modelPaths); i++ {
+	for i := 0; i < len(modelPaths); i++ {
 		http.HandleFunc(modelPaths[i], showModel)
 		http.HandleFunc(modelFilePaths[i], loadFileFromServer)
 	}
