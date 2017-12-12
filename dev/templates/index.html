@@ -1,0 +1,7 @@
+{{range .}}
+<div class="records">
+	<div class="record">{{.Name}}</div>
+	<div class="record">Размер: {{.FileSize}} байт</div>
+	<button class="button"><a href={{.Link}}>Перейти</a></button>
+</div>
+{{end}}

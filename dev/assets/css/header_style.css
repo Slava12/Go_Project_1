@@ -1,0 +1,112 @@
+body {
+  background-image: url('../img/back.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+
+.form {
+  margin: 5px auto;
+  text-align: center;
+  padding: 10px;
+  border-radius: 5px; 
+  background: RGBA(255,255,255,1);
+  -webkit-box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, .45);        
+  box-shadow: 0px 0px 15px 0px rgba(0, 0, 0, .45);  
+}
+
+.lll {
+  display: inline-block;
+  width: 15%;
+  font-family: 'Open Sans', sans-serif;
+  font-size: 18px;
+}
+
+.button{
+  height: 6%;
+  width: 20%;
+  margin-top: 10px;
+  border-radius: 3px;
+  border: rgba(0,0,0,.3) 0px solid;
+  box-sizing:border-box;
+  padding: 8px;
+  background: #80b438;
+  color: #FFF;
+  font-family: 'Open Sans', sans-serif;  
+  font-weight: 400;
+  font-size: 16pt;
+  transition:background .4s;
+  cursor: pointer;
+}
+
+.button:hover{
+  background: #90c843;
+}
+
+.button a{
+  text-decoration: none;
+  color: #fff;
+}
+/*----------------------------------------Меню--------------------------------------------*/
+ul.menu-th {
+  list-style: none; /*убираем маркеры списка*/
+  margin: 0; /*убираем отступы*/
+  padding-left: 0; /*убираем отступы*/
+  margin-top: 0px; /*делаем отступ сверху*/
+  background: #80b438; /*добавляем фон всему меню*/
+  height: 50px; /*задаем высоту*/
+  }
+.menu-th a {
+  text-decoration: none; /*убираем подчеркивание текста ссылок*/
+  background: #80b438; /*добавляем фон к пункту меню*/
+  color: #fff; /*меняем цвет ссылок*/
+  padding: 0px 15px; /*добавляем отступ*/
+  font-family: arial; /*меняем шрифт*/
+  line-height: 50px; /*ровняем меню по вертикали*/
+  display: block; 
+  border-right: 1px solid #677B27; /*добавляем бордюр справа*/
+  -moz-transition: all 0.3s 0.01s ease; /*делаем плавный переход*/
+  -o-transition: all 0.3s 0.01s ease;
+  -webkit-transition: all 0.3s 0.01s ease;
+}
+.menu-th a:hover {
+  background: #90c843; /*добавляем эффект при наведении*/
+}
+.menu-th li {
+  float: left; /*Размещаем список горизонтально для реализации меню*/
+  position: relative; /*задаем позицию для позиционирования*/
+}
+         
+        /*Стили для скрытого выпадающего меню*/
+.menu-th li > ul {
+  position: absolute;
+  display: none;   
+}
+         
+        /*Делаем скрытую часть видимой*/
+.menu-th li:hover > ul {
+  display: block; 
+  width: 250px;  /*Задаем ширину выпадающего меню*/      
+  list-style: none;
+  padding-left: 0px;
+}
+.menu-th    li:hover > ul > li {
+  float: none; /*Убираем горизонтальное позиционирование*/
+}
+
+.records {
+  margin: 2% auto;
+  font-family: arial;
+  font-size: 25pt;
+  width: 60%;
+}
+.record {
+  display: inline-block;
+  padding: auto 1%;
+    width: 45%;
+}
+.right {
+  position: absolute;
+  right: 0;
+  border-left: 1px solid #677B27;
+}

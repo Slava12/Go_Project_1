@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+	<html>
+		<head>
+			<title>Показ файлов</title>
+			<link rel="stylesheet" type="text/css" href="assets/css/style.css">
+			<script>
+				function Selected(a) {
+        			var label = a.value;
+			        if (label=="furniture") {
+			            document.getElementById("subcategory1").style.display='block';
+			            document.getElementById("subcategory2").style.display='none';
+			            document.getElementById("subcategory3").style.display='none';          
+			        } else if (label=="car") {
+			            document.getElementById("subcategory1").style.display='none';
+			            document.getElementById("subcategory2").style.display='block';
+			            document.getElementById("subcategory3").style.display='none';           
+			        } else if (label=="weapon") {
+			            document.getElementById("subcategory1").style.display='none';
+			            document.getElementById("subcategory2").style.display='none';
+			            document.getElementById("subcategory3").style.display='block';           
+			        } else {
+			            document.getElementById("subcategory1").style.display='none';
+			            document.getElementById("subcategory2").style.display='none';
+			            document.getElementById("subcategory3").style.display='none';
+			        }
+				}
+			</script>
+		</head>
+		<body>
+			<div class="button"><a href="/index">На главную</a></div>
+			<form action="/records"	method="post" enctype="multipart/form-data" class="addFileForm">
+				<fieldset>
+					<legend class="legend">Загрузить файл</legend>
+					<input type="file" name="file" accept=".obj" required>
+					<div>Выберите категорию файла</div>
+					<select name="category" aria-required="true" onChange="Selected(this)">
+					       <option disabled selected>Категория</option>
+					       <option value="furniture">Мебель</option>
+					       <option value="car">Автомобили</option>
+					       <option value="weapon">Вооружение</option>
+					       <option value="other">Другое</option>
+					</select>
+					<div id='subcategory1' style='display: none;'>
+						Выберите подкатегорию файла
+				    	<select name="subcategory">
+				    		<option disabled selected>Подкатегория</option>
+				    		<option value="chair">Стулья</option>
+				    		<option value="table">Столы</option>
+				    		<option value="sofa">Диваны</option>
+				    	</select>
+				    </div>
+				    <div id='subcategory2' style='display: none;'>
+						Выберите подкатегорию файла
+				    	<select name="subcategory">
+				    		<option disabled selected>Подкатегория</option>
+				    		<option value="sportcar">Спортивные</option>
+				    		<option value="truck">Грузовики</option>
+				    		<option value="service">Служебные</option>
+				    	</select>
+				    </div>
+				    <div id='subcategory3' style='display: none;'>
+						Выберите подкатегорию файла
+				    	<select name="subcategory">
+				    		<option disabled selected>Подкатегория</option>
+				    		<option value="tank">Танки</option>
+				    		<option value="helicopter">Вертолёты</option>
+				    		<option value="plane">Самолёты</option>
+				    	</select>
+				    </div>
+					<p><input type="submit" class="submit"></p>
+				</fieldset>
+			</form>
+			<form action="/records" method="post">
+				<div>Удалить все записи?</div>
+				<input type="checkbox" name="clear" required>
+				<input type="submit">
+			</form>
+			<form action="/records" method="post">
+				<div>Удалить модель по имени</div>
+				<input type="text" name="fileName" maxlength="20" required>
+				<input type="submit">
+			</form>
+			<div class="fileList">Список файлов</div>
+			<table>
+				<tr class="categories">
+					<td>Name</td>
+					<td>Vertices</td>
+					<td>Normals</td>
+					<td>Textures</td>
+					<td>Faces</td>
+					<td>File Name</td>
+					<td>File Size</td>
+					<td>Category</td>
+					<td>Subcategory</td>
+				</tr>
+				{{range .}}
+				<tr>
+					<td>{{.Name}}</td>
+					<td>{{.Vertices}}</td>
+					<td>{{.Normals}}</td>
+					<td>{{.Textures}}</td>
+					<td>{{.Faces}}</td>
+					<td>{{.FileName}}</td>
+					<td>{{.FileSize}}</td>
+					<td>{{.Category}}</td>
+					<td>{{.Subcategory}}</td>
+				</tr>
+				{{end}}
+			</table>
+		</body>
+	</html>

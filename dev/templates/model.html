@@ -1,0 +1,40 @@
+<head>
+	<title>{{.Name}}</title>
+	<link rel="stylesheet" type="text/css" href="../../assets/css/model_style.css" >
+</head>
+<body onload="formatSize({{.FileSize}})">
+	<div class="titleAll">
+		<div class="titleName">{{.Name}}</div>
+	</div>
+	<div class="table">
+		<div class="string">
+			<div class="column one">Количество вершин: </div>
+			<div class="column two">{{.Vertices}}</div>
+		</div>
+		<div class="string">
+			<div class="column one">Количество нормалей: </div>
+			<div class="column two">{{.Normals}}</div>
+		</div>
+		<div class="string">
+			<div class="column one">Количество текстурных координат: </div>
+			<div class="column two">{{.Textures}}</div>
+		</div>
+		<div class="string">
+			<div class="column one">Количество полигонов: </div>
+			<div class="column two">{{.Faces}}</div>
+		</div>
+		<div class="string">
+			<div class="column one">Размер файла: </div>
+			<div class="column two" id="div_for_insert"></div>
+		</div>
+		<div class="string">
+			<div class="column one">Категория: </div>
+			<div class="column two">{{.Category}}</div>
+		</div>
+		<div class="string">
+			<div class="column one">Подкатегория: </div>
+			<div class="column two">{{.Subcategory}}</div>
+		</div>
+	</div>
+	<div class="center"><button class="button ccc"><a href="{{.Name}}.obj" download="">Скачать</a></button></div>
+</body>

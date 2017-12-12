@@ -1,0 +1,57 @@
+.categories {
+	font-size: 120%;
+	color: #567777;
+}
+
+table {
+  	border: 1px solid #D4D4D4;
+  	margin: 1% auto 0 auto;
+}
+
+td {
+	border: 1px solid #D4D4D4;
+	padding: 10px 20px;
+}
+
+.fileList {
+	font-size: 150%;
+	width: 12%;
+	margin: 1% auto 0 auto;
+}
+
+.addFileForm {
+	margin: 0 auto 0 auto;
+	width: 21%;
+	color: #567777;
+	/*background-color: #121212;*/
+}
+
+.submit {
+	padding: 5% 5%;
+	margin: 0 30%;
+}
+
+.button{
+  height: 6%;
+  width: 10%;
+  border-radius: 3px;
+  border: rgba(0,0,0,.3) 0px solid;
+  box-sizing:border-box;
+  padding: 8px;
+  background: #80b438;
+  color: #FFF;
+  font-family: 'Open Sans', sans-serif;  
+  font-weight: 400;
+  font-size: 16pt;
+  transition:background .4s;
+  cursor: pointer;
+}
+
+.button:hover{
+  background: #90c843;
+}
+
+.button a{
+  text-decoration: none;
+  color: #fff;
+}

@@ -1,0 +1,13 @@
+<div class="form"><form action="/set_filters" method="post">
+	<div class="lll"><label>Поиск:</label><input type="text" class="textbox" name="searchByName" value={{.SearchByName}}></div>
+	<div class="lll"><input type="checkbox" class="textbox" name="withTextures" {{.One}}>Текстуры</div>
+	<div class="lll"><input type="checkbox" class="textbox" name="withNormals" {{.Two}}>Нормали</div>
+	<div class="lll"><div>Сортировка по размеру:</div>
+	<select class="textbox" name="sortBySize">
+		<option value="noneSize" {{.SortSize1}}>Отключена</option>
+		<option value="upSize" {{.SortSize2}}>По возрастанию</option>
+		<option value="downSize" {{.SortSize3}}>По убыванию</option>
+	</select></div>
+	<div class="lll button"><a href="/clear_filters">Сбросить фильтры</a></div>
+	<div><input type="submit" class="button"></div>
+</form></div>
